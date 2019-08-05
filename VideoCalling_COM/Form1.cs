@@ -14,7 +14,7 @@ namespace VideoCalling_COM
     public partial class Form1 : Form
     {
         ConIDHF BusRfidHF;
-        IniFile myConfig = new IniFile();
+        IniParser myConfig = new IniParser("config.ini");
         public Form1()
         {
             InitializeComponent();
@@ -43,6 +43,15 @@ namespace VideoCalling_COM
             panel_Main.Visible = false;
             panel_Binding.Visible = true;
             panel_Binding.Dock = DockStyle.Fill;
+
+            dataGridView1.Rows.Clear();
+            String[] mEnumSection = myConfig.EnumSection("binding");
+            for (int i = 0; i < mEnumSection.Length; i++)
+            {
+                dataGridView1.Rows.Add();
+                dataGridView1.Rows[dataGridView1.Rows.Count - 1].Cells[0].Value = mEnumSection[i];
+                dataGridView1.Rows[dataGridView1.Rows.Count - 1].Cells[1].Value = myConfig.GetSetting("binding",mEnumSection[i]);
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -300,17 +309,48 @@ namespace VideoCalling_COM
 
         private void Txt_Path_DoubleClick(object sender, EventArgs e)
         {
-            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                txt_Path.Text = folderBrowserDialog1.SelectedPath;
+                txt_Path.Text = openFileDialog1.FileName;
             }
         }
 
         private void Btn_Add_Click(object sender, EventArgs e)
         {
-            if (myConfig.KeyExists(txt_Label.Text))
+            if (txt_Label.Text == "")
             {
+                MessageBox.Show("标签不能为空。");
+            }
+            else if (txt_Path.Text == "")
+            {
+                MessageBox.Show("视频路径不能为空。");
+            }
+            else
+            {
+                if (myConfig.KeyExists(txt_Label.Text, "binding"))
+                {
+                    //提示是否删除原有并写入新的
+                    if (MessageBox.Show("已存在此标签，确认要覆盖原纪录？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+                    {
+                        myConfig.DeleteSetting("binding", txt_Label.Text);
+                        myConfig.AddSetting("binding", txt_Label.Text, txt_Path.Text);
+                        myConfig.SaveSettings();
+                    }
+                }
+                else
+                {
+                    myConfig.AddSetting("binding", txt_Label.Text, txt_Path.Text);
+                    myConfig.SaveSettings();
+                }
 
+                dataGridView1.Rows.Clear();
+                String[] mEnumSection = myConfig.EnumSection("binding");
+                for (int i = 0; i < mEnumSection.Length; i++)
+                {
+                    dataGridView1.Rows.Add();
+                    dataGridView1.Rows[dataGridView1.Rows.Count - 1].Cells[0].Value = mEnumSection[i];
+                    dataGridView1.Rows[dataGridView1.Rows.Count - 1].Cells[1].Value = myConfig.GetSetting("binding", mEnumSection[i]);
+                }
             }
         }
     }
